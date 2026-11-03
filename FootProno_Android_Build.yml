@@ -1,0 +1,47 @@
+name: Construire APK FootProno
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Installer Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Installer les composants Android
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Décompresser le projet Android
+        run: |
+          unzip -q FootProno_Projet_Android_APK.zip -d extracted
+          test -f extracted/FootProno_Android/settings.gradle
+
+      - name: Installer Gradle
+        run: |
+          curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          echo "/tmp/gradle-8.9/bin" >> "$GITHUB_PATH"
+
+      - name: Construire l'APK debug
+        run: gradle -p extracted/FootProno_Android assembleDebug
+
+      - name: Publier l'APK à télécharger
+        uses: actions/upload-artifact@v4
+        with:
+          name: FootProno-APK
+          path: extracted/FootProno_Android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
